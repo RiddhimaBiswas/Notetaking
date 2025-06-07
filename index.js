@@ -28,7 +28,11 @@ app.get('/', (req, res) => {
 
 
 app.post('/create', (req, res) => {
-    const title = req.body.title.replace(/[^a-zA-Z0-9 _]/g, '').replace(/\b\w/g, c => c.toUpperCase()).replace(/\s+/g, '');
+    const title = req.body.title
+        .replace(/[^a-zA-Z0-9 _]/g, '')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .replace(/\s+/g, '');
+
     const content = req.body.details;
     const filePath = path.join(dirPath, `${title}.txt`);
 
@@ -41,10 +45,11 @@ app.post('/create', (req, res) => {
     });
 });
 
-app.get('/files/:fileName', function(req, res) {
-    const filePath = `./files/${req.params.fileName}`;
 
-    fs.readFile(filePath, "utf-8", function(err, filedata) {
+app.get('/files/:fileName', (req, res) => {
+    const filePath = path.join(dirPath, req.params.fileName);
+
+    fs.readFile(filePath, "utf-8", (err, filedata) => {
         if (err) {
             return res.status(404).send("File not found.");
         }
@@ -54,6 +59,41 @@ app.get('/files/:fileName', function(req, res) {
         });
     });
 });
+
+
+app.get('/edit/:fileName', (req, res) => {
+    const filePath = path.join(dirPath, req.params.fileName);
+
+    fs.readFile(filePath, "utf-8", (err, filedata) => {
+        if (err) {
+            return res.status(404).send("File not found.");
+        }
+        res.render('edit', {
+            fileName: req.params.fileName,
+            fileBody: filedata
+        });
+    });
+});
+
+
+app.post('/edit/:fileName', (req, res) => {
+    const prevTitle = req.body.prevtitle;
+    const newTitle = req.body.newtitle;
+    const newContent = req.body.details;
+
+    const oldPath = path.join(dirPath, prevTitle);
+    const newPath = path.join(dirPath, newTitle);
+
+    fs.rename(oldPath, newPath, (err) => {
+        if (err && oldPath !== newPath) {
+            console.error("Rename error:", err);
+            return res.status(500).send("Could not rename file.");
+        }
+        res.redirect('/');
+    });
+});
+
+
 app.listen(3000, () => {
     console.log("✅ Server running on http://localhost:3000");
 });
